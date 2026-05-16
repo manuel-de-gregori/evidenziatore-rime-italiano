@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analizzatore Metrico Completo</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --primary-text: #2d3436;
+            --accent-color: #0984e3;
+            --border-color: #dfe6e9;
+            --rhyme-tag-bg: #fab1a0;
+            --assonance-color: #c0392b;
+            --consonance-color: #2980b9;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-text);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .title {
+            text-align: center;
+            margin-top: 0;
+            color: var(--primary-text);
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
+            flex-wrap: wrap;
+        }
+
+        .legend-item-rhyme span {
+            background: var(--rhyme-tag-bg);
+            padding: 2px 5px;
+            color: #000;
+            border-radius: 3px;
+        }
+
+        .legend-item-assonance span {
+            color: var(--assonance-color);
+            border-bottom: 2px dotted var(--assonance-color);
+        }
+
+        .legend-item-consonance span {
+            color: var(--consonance-color);
+            border-bottom: 2px solid var(--consonance-color);
+        }
+
+        /* Stili per i nuovi filtri (checkbox) */
+        .filters {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+        }
+
+        .filters label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .filters input[type="checkbox"] {
+            accent-color: var(--accent-color);
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #076bb8;
+        }
+
+        button:active {
+            transform: scale(0.99);
+        }
+
+        #output {
+            margin-top: 20px;
+            padding: 25px;
+            background: #fff;
+            border-radius: 10px;
+            border: 1px solid #eee;
+            line-height: 1.5;
+            font-family: 'Georgia', serif;
+            font-size: 1.15rem;
+            word-spacing: 0.5em;
+        }
+
+        .notebook-line {
+            border-bottom: 1px solid var(--border-color);
+            min-height: 28px;
+            padding-bottom: 2px;
+            margin-bottom: 8px;
+            width: 100%;
+            display: block;
+        }
+
+        .word {
+            display: inline-block;
+            margin-right: 0.8em;
+            position: relative;
+        }
+
+        .rhyme {
+            border-radius: 4px;
+            color: #000;
+            padding: 0 3px;
+        }
+
+        .assonance {
+            border-bottom: 2px dotted;
+            padding-bottom: 2px;
+        }
+
+        .consonance {
+            border-bottom: 2px solid;
+            padding-bottom: 2px;
+        }
+
+        .tag {
+            font-size: 0.7rem;
+            vertical-align: super;
+            margin-left: 3px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Tooltip Styles */
+        .tooltip {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--primary-text);
+            color: #ffffff;
+            padding: 10px 14px;
+            border-radius: 8px;
+            z-index: 100;
+            width: max-content;
+            max-width: 300px;
+            text-align: left;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            pointer-events: none;
+            transition: all 0.2s ease-in-out;
+            font-weight: normal;
+            word-spacing: normal;
+        }
+
+        .tooltip::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -6px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: var(--primary-text) transparent transparent transparent;
+        }
+
+        .word:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+            bottom: 100%;
+        }
+
+        .tooltip strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #74b9ff;
+            font-size: 0.95rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 3px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <main class="container">
+        <h2 class="title">Analizzatore Rime, Assonanze e Consonanze</h2>
+
+        <div class="legend">
+            <div class="legend-item-rhyme"><span>Testo</span> Rima</div>
+            <div class="legend-item-assonance"><span>Testo</span> Assonanza (vocali)</div>
+            <div class="legend-item-consonance"><span>Testo</span> Consonanza (consonanti)</div>
+        </div>
+
+        <div class="filters">
+            <label><input type="checkbox" id="cb-rhyme" checked onchange="analyzeText()"> Evidenzia Rime</label>
+            <label><input type="checkbox" id="cb-assonance" checked onchange="analyzeText()"> Evidenzia Assonanze</label>
+            <label><input type="checkbox" id="cb-consonance" checked onchange="analyzeText()"> Evidenzia Consonanze</label>
+        </div>
+
+        <textarea id="input" placeholder="Incolla qui il tuo testo..."></textarea>
+        <button onclick="analyzeText()">Analizza</button>
+
+        <div id="output">Inserisci il testo e clicca analizza...</div>
+    </main>
+
+    <script>
+        // --- Constants & Configuration ---
+        const MAX_LINES_DISTANCE = 3;
+        const MIN_WORD_LENGTH = 4;
+
+        const PALETTE = [
+            "#00b894", "#00a924", "#3498db", "#f39c12", "#8e44ad", "#2ecc71", "#c0392b", "#0abde3",
+            "#6c5ce7", "#16a085", "#ff7979", "#2980b9", "#f1c40f", "#9b59b6", "#27ae60",
+            "#e74c3c", "#45aad6", "#e67e22", "#5f27cd", "#00cec9", "#ea8685", "#367eb1", "#d4ac0d",
+            "#a35bc7", "#10ac84", "#eb4d4b", "#0984e3", "#ff9f43", "#7d3c98", "#1abc9c", "#cf6a87",
+            "#54a0ff", "#ffc680", "#aa00ed", "#00b94b", "#b33939", "#169bb9", "#f96300", "#4834d4",
+            "#009432", "#f78fb3", "#3dc1d3", "#e77f67", "#93008e", "#27bf2b", "#d63031", "#6e8aa7",
+            "#c17700", "#833471", "#079992", "#ff5959", "#B53471", "#e55039", "#5d6d7e", "#ed4c67",
+            "#c38e3f", "#f368e0", "#7f8c8d"
+        ];
+
+        const REGEX = {
+            CLEAN_WORD: /[^a-zàèéìòù]/g,
+            ALL_LETTERS: /[^a-zA-Zàèéìòù]/g,
+            VOWELS: /[aeiouàèéìòù]/g,
+            CONSONANTS: /[^aeiouàèéìòù]/g,
+            ACCENTED_END: /[àèéìòù]$/,
+            ACCENTED_SUFFIX: /[àèéìòù][^aeiouàèéìòù]*$/
+        };
+
+        const SDRUCCIOLE_BASE = ['fulmina', 'albero', 'tavolo', 'macchina', 'piccolo', 'anima', 'lacrima', 'polvere'];
+        const SDRUCCIOLE_SUFFIXES = ['issimo', 'abile', 'ibile', 'evole', 'ologo', 'astico', 'atico'];
+        const DIPHTHONG_ENDINGS = ['ia', 'ie', 'io', 'ua', 'uo'];
+
+        // --- Utility Functions ---
+        const extractVowels = (str) => str.replace(REGEX.CONSONANTS, '');
+        const extractConsonants = (str) => str.replace(REGEX.VOWELS, '');
+
+        function getMetricCoda(word) {
+            let cleanWord = word.toLowerCase().replace(REGEX.CLEAN_WORD, '');
+            const originalWord = cleanWord;
+
+            // Metric normalization: remove diacritic/silent 'i' and 'u'
+            cleanWord = cleanWord.replace(/([cg]|sc|gl)i([aouàòù])/g, '$1$2');
+            cleanWord = cleanWord.replace(/([qg])u([aeioàèéì])/g, '$1$2');
+
+            if (REGEX.ACCENTED_END.test(originalWord)) {
+                return cleanWord.match(REGEX.ACCENTED_SUFFIX)?.[0] || cleanWord;
+            }
+
+            const vowels = [...cleanWord.matchAll(REGEX.VOWELS)];
+            if (vowels.length < 2) return cleanWord.slice(vowels[0]?.index || 0);
+
+            let stressOffset = 2; // Default: Piana
+
+            const isSdrucciola = SDRUCCIOLE_BASE.includes(originalWord) ||
+                SDRUCCIOLE_SUFFIXES.some(suf => originalWord.endsWith(suf)) ||
+                (DIPHTHONG_ENDINGS.some(dip => originalWord.endsWith(dip)) && vowels.length >= 3);
+
+            if (isSdrucciola) {
+                stressOffset = 3;
+            }
+
+            const targetVowelIndex = Math.max(0, vowels.length - stressOffset);
+            return cleanWord.slice(vowels[targetVowelIndex]?.index || 0);
+        }
+
+        function linkGroupIds(index1, index2, idArray, getNextId) {
+            const id1 = idArray[index1];
+            const id2 = idArray[index2];
+
+            if (id1 === null && id2 === null) {
+                const newId = getNextId();
+                idArray[index1] = newId;
+                idArray[index2] = newId;
+            } else if (id1 !== null && id2 === null) {
+                idArray[index2] = id1;
+            } else if (id1 === null && id2 !== null) {
+                idArray[index1] = id2;
+            } else if (id1 !== id2) {
+                // Merge groups
+                for (let k = 0; k < idArray.length; k++) {
+                    if (idArray[k] === id2) idArray[k] = id1;
+                }
+            }
+        }
+
+        // --- Main Logic ---
+        function analyzeText() {
+            const rawText = document.getElementById('input').value;
+            const outputDiv = document.getElementById('output');
+
+            if (!rawText.trim()) {
+                outputDiv.innerHTML = 'Inserisci del testo per iniziare...';
+                return;
+            }
+
+            const wordsOriginal = rawText.trim().split(/\s+/);
+            const wordsClean = wordsOriginal.map(w => w.replace(REGEX.ALL_LETTERS, '').toLowerCase());
+            const wordLineMap = buildWordLineMap(rawText);
+
+            const totalWords = wordsOriginal.length;
+            const rhymeIds = Array(totalWords).fill(null);
+            const assonanceIds = Array(totalWords).fill(null);
+            const consonanceIds = Array(totalWords).fill(null);
+
+            let nextGenericId = 1;
+
+            for (let i = 0; i < wordsClean.length; i++) {
+                if (wordsClean[i].length < MIN_WORD_LENGTH) continue;
+
+                const codaI = getMetricCoda(wordsClean[i]);
+                const vowelsI = extractVowels(codaI);
+                const consonantsI = extractConsonants(codaI);
+
+                for (let j = i + 1; j < wordsClean.length; j++) {
+                    if (wordLineMap[j] - wordLineMap[i] > MAX_LINES_DISTANCE) break;
+                    if (wordsClean[j].length < MIN_WORD_LENGTH || wordsClean[i] === wordsClean[j]) continue;
+
+                    const codaJ = getMetricCoda(wordsClean[j]);
+                    const vowelsJ = extractVowels(codaJ);
+                    const consonantsJ = extractConsonants(codaJ);
+
+                    if (codaI === codaJ) {
+                        linkGroupIds(i, j, rhymeIds, () => nextGenericId++);
+                    } else if (vowelsI === vowelsJ && vowelsI.length > 0) {
+                        linkGroupIds(i, j, assonanceIds, () => nextGenericId++);
+                    } else if (consonantsI === consonantsJ && consonantsI.length > 0) {
+                        linkGroupIds(i, j, consonanceIds, () => nextGenericId++);
+                    }
+                }
+            }
+
+            renderResults(rawText, wordsOriginal, rhymeIds, assonanceIds, consonanceIds);
+        }
+
+        function buildWordLineMap(rawText) {
+            const map = [];
+            let currentLine = 0;
+            const lines = rawText.trim().split('\n');
+
+            lines.filter(line => line.trim() !== "")
+                .map(line => line.trim().split(/\s+/))
+                .forEach(words => {
+                    words.filter(w => w).forEach(w => {
+                        map.push(currentLine);
+                    });
+                    currentLine++;
+                });
+
+            return map;
+        }
+
+        function createGroups(wordsOriginal, rhymeIds, assonanceIds, consonanceIds) {
+            // Group words by their assigned IDs to populate tooltips later
+            const groups = { rhymes: {}, assonances: {}, consonances: {} };
+
+            wordsOriginal.forEach((word, i) => {
+                const cleanWord = word.replace(/[^\wàèéìòù]/gi, '').toLowerCase();
+                if (rhymeIds[i]) {
+                    groups.rhymes[rhymeIds[i]] = groups.rhymes[rhymeIds[i]] || [];
+                    groups.rhymes[rhymeIds[i]].push(cleanWord);
+                }
+                if (assonanceIds[i]) {
+                    groups.assonances[assonanceIds[i]] = groups.assonances[assonanceIds[i]] || [];
+                    groups.assonances[assonanceIds[i]].push(cleanWord);
+                }
+                if (consonanceIds[i]) {
+                    groups.consonances[consonanceIds[i]] = groups.consonances[consonanceIds[i]] || [];
+                    groups.consonances[consonanceIds[i]].push(cleanWord);
+                }
+            });  
+
+            return groups;
+        }
+
+        // --- Rendering Logic ---
+        function renderResults(rawText, wordsOriginal, rhymeIds, assonanceIds, consonanceIds) {
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerHTML = '';
+
+            // Leggi lo stato dei checkbox
+            const showRhyme = document.getElementById('cb-rhyme').checked;
+            const showAssonance = document.getElementById('cb-assonance').checked;
+            const showConsonance = document.getElementById('cb-consonance').checked;
+
+            // Group words by their assigned IDs to populate tooltips later
+            const groups = createGroups(wordsOriginal, rhymeIds, assonanceIds, consonanceIds);
+
+            let globalWordIndex = 0;
+
+            rawText.split('\n').forEach(line => {
+                const lineDiv = document.createElement('div');
+                lineDiv.className = 'notebook-line';
+
+                const leadingSpaces = line.length - line.trimStart().length;
+                lineDiv.style.paddingLeft = `${leadingSpaces * 10}px`;
+
+                if (line.trim() === "") {
+                    outputDiv.appendChild(lineDiv);
+                    return;
+                }
+
+                const lineWords = line.trim().split(/\s+/);
+
+                lineWords.forEach(word => {
+                    if (!word) return;
+
+                    const span = document.createElement('span');
+                    span.textContent = word;
+                    span.className = 'word';
+
+                    // Applica le logiche dei filtri
+                    const rhymeId = showRhyme ? rhymeIds[globalWordIndex] : null;
+                    const assonanceId = showAssonance ? assonanceIds[globalWordIndex] : null;
+                    const consonanceId = showConsonance ? consonanceIds[globalWordIndex] : null;
+
+                    applyStyling(span, rhymeId, assonanceId, consonanceId);
+
+                    if (rhymeId || assonanceId || consonanceId) {
+                        attachTooltip(span, word, rhymeId, assonanceId, consonanceId, groups);
+                    }
+
+                    lineDiv.appendChild(span);
+                    lineDiv.appendChild(document.createTextNode(' '));
+
+                    globalWordIndex++;
+                });
+
+                outputDiv.appendChild(lineDiv);
+            });
+        }
+
+        function applyStyling(span, rId, aId, cId) {
+            if (cId) {
+                const color = PALETTE[cId % PALETTE.length];
+                span.classList.add('consonance');
+                if (!rId && !aId) span.style.color = color;
+                span.style.borderBottom = `2px solid ${color}`;
+                span.innerHTML += `<span class="tag" style="color: ${color};">C${cId}</span>`;
+            }
+
+            if (aId) {
+                const color = PALETTE[aId % PALETTE.length];
+                span.classList.add('assonance');
+                if (!rId) span.style.color = color;
+                span.style.borderBottom = `2px dotted ${color}`;
+                span.innerHTML += `<span class="tag" style="color: ${color};">A${aId}</span>`;
+            }
+
+            if (rId) {
+                const color = PALETTE[rId % PALETTE.length];
+                span.classList.add('rhyme');
+                const transparency = '70';
+                span.style.backgroundColor = color + transparency;
+                span.innerHTML += `<span class="tag" style="color: black;">R${rId}</span>`;
+            }
+        }
+
+        function attachTooltip(span, originalWord, rhymeId, assonanceId, consonanceId, groups) {
+            span.style.cursor = 'help';
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+
+            const cleanWord = originalWord.replace(/[^\wàèéìòù]/gi, '').toLowerCase();
+
+            let rhymedWords = new Set(groups.rhymes[rhymeId] || []);
+            let assonancedWords = new Set(groups.assonances[assonanceId] || []);
+            let consonancedWords = new Set(groups.consonances[consonanceId] || []);
+
+            // Exclude the current word from its own tooltip
+            rhymedWords.delete(cleanWord);
+            assonancedWords.delete(cleanWord);
+            consonancedWords.delete(cleanWord);
+
+            // Remove words from weaker relationships if they are already in stronger ones
+            for (let rWord of rhymedWords) {
+                assonancedWords.delete(rWord);
+                consonancedWords.delete(rWord);
+            }
+
+            const displayWord = originalWord.replace(/[^\wàèéìòù]/gi, '');
+            let tooltipHTML = `<strong>${displayWord}</strong>`;
+
+            if (rhymeId && rhymedWords.size > 0) {
+                tooltipHTML += `Rima (R${rhymeId}): ${[...rhymedWords].join(', ')}<br><br>`;
+            }
+            if (assonanceId && assonancedWords.size > 0) {
+                tooltipHTML += `Assonanza (A${assonanceId}): ${[...assonancedWords].join(', ')}<br><br>`;
+            }
+            if (consonanceId && consonancedWords.size > 0) {
+                tooltipHTML += `Consonanza (C${consonanceId}): ${[...consonancedWords].join(', ')}<br><br>`;
+            }
+
+            tooltip.innerHTML = tooltipHTML;
+            span.appendChild(tooltip);
+        }
+    </script>
+</body>
+
+</html>
